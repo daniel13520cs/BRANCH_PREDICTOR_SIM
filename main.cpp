@@ -17,7 +17,6 @@
 
 using namespace std;
 #define MemSize 65536
-u_long test(bitset<32> in, int start, int end);
 
 //branch instructions
 class INSMem
@@ -27,14 +26,14 @@ public:
   vector<unsigned int> IMem;
   vector<bool> res;
   
-  INSMem()
+  INSMem(const char* fileName)
   {
     IMem.resize(MemSize);
     res.resize(MemSize);
     ifstream imem;
     string line;
     int i=0;
-    imem.open("trace.txt");
+    imem.open(fileName);
     if (imem.is_open())
     {
       while (getline(imem,line))
@@ -64,26 +63,28 @@ public:
   int local;
   int global;
   int corelattingState = 3;
-  vector<vector<int>> predictState;
-  
-  int m = 12;
-  int k = 2;
-  Counter(){
+  vector<vector<int> > predictState;
+  int m;
+  int k;
+  Counter(const char* fileName){
       //get the value of m and k
       ifstream mk;
       string line;
-      int lineNum = 0;
-      mk.open("config_new.txt");
+      //mk.open("config_new.txt");
+      mk.open(fileName);
       if (mk.is_open())
       {
         //get m
         mk >> m;
         //get k
         mk >> k;
+      } else {
+        cout << "Unable to open the file\n";
       }
+    corelattingState = pow(2,k) - 1;
     
-    local = (2 << m);
-    cout << "local=" << local;
+      local = pow(2, m);
+    //cout << "local=" << local;
       global = pow(2, k);
       //cout << "g = " << global;
       predictState.resize(local);
@@ -98,7 +99,6 @@ public:
        }
       }
     }
-  
   
   //return true if predict taken, false otherwise
   bool predict(int state){
@@ -118,33 +118,38 @@ private:
 };
 
 int main(int argc, const char * argv[]) {
-  //cout << ((3 >> 1) + 2) << "\n";
-  INSMem myInsMem;
-  Counter myCounter;
-  int m = 12;
-  int k = 2;
-  myCounter.
+  Counter myCounter(argv[0]); // "config_new.txt"
+  INSMem myInsMem(argv[1]); // "trace.txt"
+  int m = myCounter.m;
+  int k = myCounter.k;
   int i = 0;
   int lsb = pow(2,m);
+  
+  double numOfMiss = 0;
   
   unsigned int rowIdx = myInsMem.IMem[i] % lsb;
   unsigned int colIdx = myCounter.corelattingState;
   ofstream traceOut;
   //erase the last result
-  traceOut.open("trace.out.txt",std::ofstream::out | std::ofstream::trunc);
+  traceOut.open("trace.txt.out",std::ofstream::out | std::ofstream::trunc);
   if (traceOut.is_open()){
-    cout<<"trace.out.isopen";
     while( myInsMem.IMem[i] != 0 ){
+      
+      //miss rate
+      if(myCounter.predict(myCounter.predictState[rowIdx][colIdx]) != myInsMem.res[i]){
+        numOfMiss++;
+      }
+      
       //output my prediction result
       if(myCounter.predict(myCounter.predictState[rowIdx][colIdx])){
         traceOut<< "1"<<endl;
-        cout << "line "<<i+1<<" 1\n";
+        //cout << "line "<<i+1<<" 1\n";
       } else {
         traceOut<< "0"<<endl;
-        cout << "line "<<i+1<<" 0\n";
+        //cout << "line "<<i+1<<" 0\n";
       }
       
-            cout << rowIdx << "\t" << colIdx << "\t" << myCounter.predictState[rowIdx][colIdx] << endl;
+      //cout << rowIdx << "\t" << colIdx << "\t" << myCounter.predictState[rowIdx][colIdx] << endl;
       
       //update local counter states
       if(myInsMem.res[i] & (myCounter.predictState[rowIdx][colIdx] !=3)){
@@ -162,22 +167,15 @@ int main(int argc, const char * argv[]) {
         }
       
       }
-      
-
-      //debug
-      //cout << myInsMem.res[i] << "\n";
-      //cout <<myCounter.predictState[rowIdx][colIdx] << "\n";
-
-      
-      
- 
-      
+    
       //update global counter states
-      if(myInsMem.res[i]){
-        colIdx = (colIdx / 2) + 2;
-        
-      } else {
-        colIdx = colIdx / 2;
+      if (k>0){
+        if(myInsMem.res[i]){
+          colIdx = (colIdx / 2) + ( pow(2,(k-1)) );
+          
+        } else {
+          colIdx = colIdx / 2;
+        }
       }
       //cout << "colIdx = " << colIdx << "\n";
       
@@ -187,10 +185,9 @@ int main(int argc, const char * argv[]) {
     }
     
   } else {
-    cout<<"Unable to open file";
+    //cout<<"Unable to open file";
     traceOut.close();
   }
-  
   
   //debug
   for (int i = 0; i < pow(2,m); ++i){
@@ -198,27 +195,13 @@ int main(int argc, const char * argv[]) {
      //cout << "predictStateResult = " << myCounter.predictState[i][j] <<"\n";
    }
   }
-  
-  
-  
-  //debug update function
-  
-  
-  
-
-  
-  
+  /*
+  cout << "numOfMiss" << numOfMiss;
+  cout << "i" << i;
+  cout << "miss rate =" << (numOfMiss /i);
+  */
   //cout << "end";
   return 0;
-}
-
-u_long test(bitset<32> in, int start, int end)
-{
-  u_long res = 0;
-  for (int i=start; i>=end; i--){
-    res = (res << 1) + in.test(i);
-  }
-  return res;
 }
 
 
