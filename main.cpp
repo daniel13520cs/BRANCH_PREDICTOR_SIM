@@ -62,7 +62,7 @@ class Counter{
 public:
   int local;
   int global;
-  int corelattingState = 3;
+  int corelattingState;
   vector<vector<int> > predictState;
   int m;
   int k;
@@ -118,8 +118,10 @@ private:
 };
 
 int main(int argc, const char * argv[]) {
-  Counter myCounter(argv[0]); // "config_new.txt"
-  INSMem myInsMem(argv[1]); // "trace.txt"
+  Counter myCounter(argv[1]); // "config_new.txt"
+  INSMem myInsMem(argv[2]); // "trace.txt"
+  //Counter myCounter("config_new.txt");
+  //INSMem myInsMem("trace.txt");
   int m = myCounter.m;
   int k = myCounter.k;
   int i = 0;
@@ -198,7 +200,7 @@ int main(int argc, const char * argv[]) {
   /*
   cout << "numOfMiss" << numOfMiss;
   cout << "i" << i;
-  cout << "miss rate =" << (numOfMiss /i);
+  cout << "miss rate =" << (numOfMiss /548.0);
   */
   //cout << "end";
   return 0;
